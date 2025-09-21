@@ -40,11 +40,10 @@ class Validator extends User
 {
     private function hashPassword(): void
     {
-        foreach ($this->users as $user) {
-            $encryptionPassword = password_hash($user['password'], PASSWORD_DEFAULT);
+        foreach ($this->users as &$user) {
+            $user['password'] = password_hash($user['password'], PASSWORD_DEFAULT);
         }
-
-        var_dump($encryptionPassword);
+        unset($user);
     }
 
     public function validateAvailableEmail(string $userEmail): bool
@@ -53,14 +52,16 @@ class Validator extends User
             if ($user['email'] === $userEmail) {
                 return True;
             }
-
         }
         return False;
     }
-    public function validateAvailablePassword(string $userPassword): bool {
+    public function validateAvailablePassword(string $userPassword): bool
+    {
         foreach ($this->users as $user) {
-            if ($user['password'] === $userPassword)
-            {
+            if(!preg_match('/^(?=.*[A-Z])(?=.*\d).{8,}$/', $userPassword)){
+                return False;
+            }
+            if ($user['password'] === $userPassword) {
                 return True;
             }
         }
