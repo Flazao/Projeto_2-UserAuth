@@ -16,3 +16,6 @@ $auth->login("joao@email.com", "Errada123");
 
 echo "=== Caso 4 ===\n";
 $auth->resetPassword(1, "NovaSenha1");
+
+echo "=== Caso 5 ===\n";
+$auth->register("João X", "joao@email.com", "OutraSenha1");

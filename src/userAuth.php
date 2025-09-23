@@ -26,16 +26,6 @@ class UserManager
         return null;
     }
 
-    public function findUserById(int $id): ?array
-    {
-        foreach ($this->users as $user) {
-            if ($user['id'] === $id) {
-                return $user;
-            }
-        }
-        return null;
-    }
-
     public function addUser(string $name, string $email, string $password): bool
     {
         if ($this->findUserByEmail($email)) {
