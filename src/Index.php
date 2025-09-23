@@ -2,7 +2,11 @@
 
 require_once "user_auth.php";
 
-$userHandler = new User();
+$users = new UserManager();
+$auth = new AuthService($users);
 
-$emailCorreto = 'joao@email.com';
-$senhaCorreta = 'SenhaForte1';
+$auth->register("Maria Souza", "maria@email.com", "Maria123");
+
+$auth->login("maria@email.com", "Maria123");
+
+$auth->resetPassword(1, "NovaSenha123");

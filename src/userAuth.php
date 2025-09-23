@@ -2,7 +2,7 @@
 
 class UserManager
 {
-        private array $users = [];
+    public array $users = [];
 
     public function __construct()
     {
@@ -13,23 +13,10 @@ class UserManager
                 'email' => 'joao@email.com',
                 'password' => password_hash('SenhaForte1', PASSWORD_DEFAULT),
             ],
-            [
-                'id' => 2,
-                'name' => 'Jose Fuji',
-                'email' => 'josefuji@email.com',
-                'password' => password_hash('Jose123@', PASSWORD_DEFAULT),
-            ],
-            [
-                'id' => 3,
-                'name' => 'Gabriel Flazao',
-                'email' => 'flazao@email.com',
-                'password' => password_hash('Gabriel@2025', PASSWORD_DEFAULT),
-            ],
         ];
     }
 
-
-     public function findUserByEmail(string $email): ?array
+    public function findUserByEmail(string $email): ?array
     {
         foreach ($this->users as $user) {
             if ($user['email'] === $email) {
@@ -39,7 +26,7 @@ class UserManager
         return null;
     }
 
-     public function findUserById(int $id): ?array
+    public function findUserById(int $id): ?array
     {
         foreach ($this->users as $user) {
             if ($user['id'] === $id) {
@@ -49,126 +36,99 @@ class UserManager
         return null;
     }
 
-    public function nextId(): int
-    {
-        return count($this->users) + 1;
-    }
-
-     public function addUser(array $user): void
-    {
-        $this->users[] = $user;
-    }
-
-     public function update(array $updated): bool
-    {
-        foreach ($this->users as $i => $user) {
-            if ($user['id'] === $updated['id']) {
-                $this->users[$i] = $updated;
-                return False;
-            }
-        }
-        return True;
-    }
-}
-    
-
-class Validator
-{
-    private function hashPassword(): void
-    {
-        foreach ($this->users as &$user) {
-            $user['password'] = password_hash($user['password'], PASSWORD_DEFAULT);
-        }
-        unset($user);
-    }
-
-    public function validateAvailableEmail(string $userEmail): bool
-    {
-        foreach ($this->users as $user) {
-            if ($user['email'] === $userEmail) {
-                return True;
-            }
-        }
-        return False;
-    }
-    public function validateAvailablePassword(string $userPassword): bool
-    {
-        foreach ($this->users as $user) {
-            if (!preg_match('/^(?=.*[A-Z])(?=.*\d).{8,}$/', $userPassword)) {
-                return False;
-            }
-            if ($user['password'] === $userPassword) {
-                return True;
-            }
-        }
-        return False;
-    }
-
-    private function emailExists(string $email): bool
-    {
-        foreach ($this->users as $user) {
-            if ($user['email'] === $email) {
-                return true;
-            }
-        }
-        return false;
-    }
-}
-
-
-class authService 
-{
-    public function register(string $name, string $email, string $password): bool
-    {
-
-        // if (!$this->validateAvailablePassword($password)) {
-        //     echo "Erro: A senha deve ter pelo menos 8 caracteres, uma letra maiúscula e um número.\n";
-        //     return false;
-        // }
-
-        $newId = count($this->users) + 1;
-        $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-
-        $this->users[] = [
-            'id' => $newId,
-            'name' => $name,
-            'email' => $email,
-            'password' => $hashedPassword
-        ];
-
-        return true;
-    }
-   
     public function addUser(string $name, string $email, string $password): bool
     {
-        if ($this->emailExists($email)) {
+        if ($this->findUserByEmail($email)) {
+            echo "\nErro: E-mail já cadastrado.\n";
             return false;
         }
 
-        $newId = count($this->users) + 1;
-
-        $newUser = [
-            'id' => $newId,
+        $this->users[] = [
+            'id' => count($this->users) + 1,
             'name' => $name,
             'email' => $email,
-            'password' => password_hash($password, PASSWORD_DEFAULT)
+            'password' => password_hash($password, PASSWORD_DEFAULT),
         ];
-
-        $this->users[] = $newUser;
-
+        echo "\nUsuário cadastrado com sucesso!\n";
         return true;
     }
 
-    public function authenticate(string $email, string $password): bool
+    public function updatePassword(int $id, string $newPassword): bool
     {
-        foreach ($this->users as $user) {
-            if ($user['email'] === $email) {
-                if (password_verify($password, $user['password'])) {
-                    return true;
-                }
+        foreach ($this->users as &$user) {
+            if ($user['id'] === $id) {
+                $user['password'] = password_hash($newPassword, PASSWORD_DEFAULT);
+                echo "\nSenha atualizada com sucesso!\n";
+                return true;
             }
         }
+        echo "\nUsuário não encontrado.\n";
         return false;
     }
 }
 
+class Validator
+{
+    public static function validateEmail(string $email): bool
+    {
+        return filter_var($email, FILTER_VALIDATE_EMAIL) !== false;
+    }
+
+    public static function validatePassword(string $password): bool
+    {
+        return preg_match('/^(?=.*[A-Z])(?=.*\d).{8,}$/', $password);
+    }
+}
+
+class AuthService
+{
+    private UserManager $userManager;
+
+    public function __construct(UserManager $userManager)
+    {
+        $this->userManager = $userManager;
+    }
+
+    public function register(string $name, string $email, string $password): bool
+    {
+        if (!Validator::validateEmail($email)) {
+            echo "\nErro: E-mail inválido.\n";
+            return false;
+        }
+
+        if (!Validator::validatePassword($password)) {
+            echo "\nErro: Senha fraca.\n";
+            return false;
+        }
+
+        return $this->userManager->addUser($name, $email, $password);
+    }
+
+    public function login(string $email, string $password): bool
+    {
+        $user = $this->userManager->findUserByEmail($email);
+        if (!$user) {
+            echo "\nFalha no login: usuário não encontrado.\n";
+            return false;
+        }
+
+        if (password_verify($password, $user['password'])) {
+            echo "\nLogin bem-sucedido!\n";
+            return true;
+        }
+
+        echo "\nFalha no login: senha incorreta.\n";
+        return false;
+    }
+
+    public function resetPassword(int $id, string $newPassword): bool
+    {
+        if (!Validator::validatePassword($newPassword)) {
+            echo "Erro: Senha fraca.\n";
+            return false;
+        }
+
+        return $this->userManager->updatePassword($id, $newPassword);
+    }
+}
+    
